@@ -40,9 +40,11 @@ class PyGithubClient:
     def add_labels(self, pr_number: int, *labels: str) -> bool:
         try:
             pr = self.repo.get_pull(pr_number)
+            existing = {label.name for label in pr.get_labels()}
             for label in labels:
-                pr.add_to_labels(label)
-                logger.info("Added label %s to PR #%s", label, pr_number)
+                if label not in existing:
+                    pr.add_to_labels(label)
+                    logger.info("Added label %s to PR #%s", label, pr_number)
             return True
         except GITHUB_CALL_EXCEPTIONS as err:
             logger.error("Failed to add labels %r on PR %s: %s", labels, pr_number, err)
@@ -56,11 +58,6 @@ class PyGithubClient:
                 if label in existing:
                     pr.remove_from_labels(label)
                     logger.info("Removed label %s from PR #%s", label, pr_number)
-                logger.info(
-                    "Skipped removing label %s from PR #%s as it did not exist",
-                    label,
-                    pr_number,
-                )
             return True
         except GITHUB_CALL_EXCEPTIONS as err:
             logger.error(

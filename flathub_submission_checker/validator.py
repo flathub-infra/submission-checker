@@ -184,7 +184,6 @@ class PRValidator:
 
     def label_draft_prs(self, draft_pr_numbers: list[int]) -> None:
         for pr_num in draft_pr_numbers:
-            logger.info("Adding draft label to PR #%s", pr_num)
             self.client.add_labels(pr_num, LABEL_WORK_IN_PROGRESS)
 
     def start_build_if_needed(self, ctx: PRContext) -> bool:
