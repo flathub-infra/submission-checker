@@ -5,6 +5,7 @@ from flathub_submission_checker.constants import (
     APPID_COMPONENT_RE,
     CHECKLIST_ITEMS,
     CHECKLIST_LINE_RE,
+    FLATHUB_DOCS_BASE_URL,
     MAX_UNCHECKED_ITEMS_ALLOWED,
     REQUIRED_CHECKLIST_COUNT,
     ROLE_CHECKLIST_RE,
@@ -137,7 +138,10 @@ def has_missing_video(body: str) -> bool:
             logger.info("Video checklist item marked N/A or no video available")
             return True
 
-        if VIDEO_LINK_RE.search(search_text):
+        for matched in VIDEO_LINK_RE.finditer(search_text):
+            url = matched.group(0)
+            if url.startswith(f"{FLATHUB_DOCS_BASE_URL}/"):
+                continue
             return False
 
         logger.info(
