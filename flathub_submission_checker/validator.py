@@ -239,7 +239,7 @@ class PRValidator:
             logger.info("PR #%s has leave-open label, skipping", ctx.number)
             return True
 
-        spam_ret, spam_comment = is_considered_spam(ctx.files, ctx.body)
+        spam_ret, spam_comment = is_considered_spam(ctx.files, ctx.body, ctx.labels)
         if spam_ret:
             logger.info("PR #%s considered spam, closing", ctx.number)
             SPAM_COMMENT = f"{SPAM_CLOSE_COMMENT} {spam_comment}."

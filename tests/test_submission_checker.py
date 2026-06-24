@@ -348,23 +348,26 @@ class TestCountUncheckedRelevantItems:
 
 class TestIsConsideredSpam:
     def test_valid_submission_is_not_spam(self):
-        assert is_considered_spam(VALID_FILES, FULL_CHECKLIST_BODY) == (False, "")
+        assert is_considered_spam(VALID_FILES, FULL_CHECKLIST_BODY, set()) == (
+            False,
+            "",
+        )
 
     def test_all_files_in_subdirectory_is_spam(self):
         nested_files = ["some/nested/file.json", "another/nested/file.yaml"]
-        assert is_considered_spam(nested_files, FULL_CHECKLIST_BODY) == (
+        assert is_considered_spam(nested_files, FULL_CHECKLIST_BODY, set()) == (
             True,
             "Files not in toplevel",
         )
 
     def test_missing_checklist_template_is_spam(self):
-        assert is_considered_spam(VALID_FILES, NO_CHECKLIST_BODY) == (
+        assert is_considered_spam(VALID_FILES, NO_CHECKLIST_BODY, set()) == (
             True,
             "Checklist(s) not completed or missing",
         )
 
     def test_incomplete_checklist_template_is_not_spam(self):
-        assert is_considered_spam(VALID_FILES, MISSING_ITEM_CHECKLIST_BODY) == (
+        assert is_considered_spam(VALID_FILES, MISSING_ITEM_CHECKLIST_BODY, set()) == (
             False,
             "",
         )
@@ -382,7 +385,7 @@ class TestIsConsideredSpam:
         lines.append(f"- [x] {ROLE_LINE}")
         body = "\n".join(lines) + "\n"
 
-        assert is_considered_spam(VALID_FILES, body) == (
+        assert is_considered_spam(VALID_FILES, body, set()) == (
             True,
             "Checklist(s) not completed or missing",
         )
@@ -391,13 +394,22 @@ class TestIsConsideredSpam:
         body = checklist_body().replace(
             "      https://example.com/demo-video.mp4\n", ""
         )
-        assert is_considered_spam(VALID_FILES, body) == (
+        assert is_considered_spam(VALID_FILES, body, set()) == (
             True,
             "Video checklist requirement not met",
         )
 
+    def test_missing_video_item_but_migrate_appid(self):
+        body = checklist_body().replace(
+            "      https://example.com/demo-video.mp4\n", ""
+        )
+        assert is_considered_spam(VALID_FILES, body, {"migrate-app-id"}) == (
+            False,
+            "",
+        )
+
     def test_one_unchecked_item_is_not_spam(self):
-        assert is_considered_spam(VALID_FILES, checklist_body(unchecked=1)) == (
+        assert is_considered_spam(VALID_FILES, checklist_body(unchecked=1), set()) == (
             False,
             "",
         )

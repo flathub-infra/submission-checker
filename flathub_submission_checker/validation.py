@@ -9,6 +9,7 @@ from flathub_submission_checker.constants import (
     DOMAIN_COMMENT_PARTIAL,
     EXCLUDED_ID_PREFIXES,
     FLATHUB_JSON_RE,
+    LABEL_MIGRATE,
     MASTER_BRANCH_URL,
     MAX_UNCHECKED_ITEMS_ALLOWED,
     PR_TEMPLATE_URL,
@@ -87,7 +88,9 @@ def get_domain(appid: str) -> str | None:
     return domain
 
 
-def is_considered_spam(files: list[str], body: str) -> tuple[bool, str]:
+def is_considered_spam(
+    files: list[str], body: str, labels: set[str]
+) -> tuple[bool, str]:
     if files and all("/" in f for f in files):
         logger.info(
             "All files are nested in subdirectories, flagging as spam: %s", files
@@ -100,7 +103,7 @@ def is_considered_spam(files: list[str], body: str) -> tuple[bool, str]:
         logger.info("Checklist missing or altered, flagging as spam")
         return (True, "Checklist(s) not completed or missing")
 
-    if has_missing_video(body):
+    if LABEL_MIGRATE not in labels and has_missing_video(body):
         logger.info(
             "Video checklist item missing, unchecked, or has no link, flagging as spam"
         )

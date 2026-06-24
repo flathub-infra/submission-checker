@@ -23,6 +23,7 @@ LABEL_AWAITING_UPSTREAM = "awaiting-upstream"
 LABEL_REVIEWED_WAITING = "reviewed-waiting"
 LABEL_STALE = "Stale"
 LABEL_LEAVE_OPEN = "leave-open"
+LABEL_MIGRATE = "migrate-app-id"
 
 
 BOT_LOGINS = frozenset({"flathubbot", "github-actions", "github-actions[bot]"})
