@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from flathub_submission_checker.constants import (
     BUILD_START_COMMENT,
     BUILD_START_COMMENT_PARTIAL,
+    COMMENT_FOOTER,
     LABEL_AWAITING_CHANGES,
     LABEL_AWAITING_REVIEW,
     LABEL_AWAITING_UPSTREAM,
@@ -170,13 +171,17 @@ class PRValidator:
         return matched
 
     def _comment(self, ctx: PRContext, body: str) -> bool:
+        comment = f"{body}{COMMENT_FOOTER}"
+
         if ctx.comment_exists_any(body):
             logger.info("Comment already exists on PR #%s, skipping", ctx.number)
             return True
-        if not self.client.post_comment(ctx.number, body):
+
+        if not self.client.post_comment(ctx.number, comment):
             logger.info("Failed to comment on PR #%s", ctx.number)
             return False
-        ctx.record_comment(body)
+
+        ctx.record_comment(comment)
         return True
 
     def label_draft_prs(self, draft_pr_numbers: list[int]) -> None:

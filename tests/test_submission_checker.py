@@ -6,6 +6,7 @@ import pytest
 from flathub_submission_checker.constants import (
     BUILD_START_COMMENT_PARTIAL,
     BUILD_SUCCESS_COMMENT,
+    COMMENT_FOOTER,
     DOMAIN_COMMENT_PARTIAL,
     LABEL_AWAITING_CHANGES,
     LABEL_AWAITING_REVIEW,
@@ -1004,6 +1005,81 @@ class TestValidatePR:
         client.post_comment.assert_not_called()
         client.close_pr.assert_not_called()
         client.count_unresolved_review_threads.assert_not_called()
+
+
+class TestComment:
+    def _validator(self, client) -> PRValidator:
+        return PRValidator(client, "flathub/flathub")
+
+    def test_footer_appended_to_comment(self):
+        ctx = make_pr_context(comment_lines=[])
+        client = make_client()
+        validator = self._validator(client)
+        assert validator._comment(ctx, "Some comment body") is True
+        posted_body = client.post_comment.call_args[0][1]
+        assert posted_body == "Some comment body" + COMMENT_FOOTER
+
+    def test_footer_appended_to_recorded_comment(self):
+        ctx = make_pr_context(comment_lines=[])
+        client = make_client()
+        self._validator(client)._comment(ctx, "Some comment body")
+        recorded = "\n".join(ctx.comment_lines)
+        assert ("Some comment body" + COMMENT_FOOTER) in recorded
+
+    def test_deduper_uses_original_body(self):
+        ctx = make_pr_context(comment_lines=["Some comment body"])
+        client = make_client()
+        assert self._validator(client)._comment(ctx, "Some comment body") is True
+        client.post_comment.assert_not_called()
+
+    def test_deduper_matches_footered_comment(self):
+        previous_comment = "Some comment body" + COMMENT_FOOTER
+        ctx = make_pr_context(comment_lines=previous_comment.split("\n"))
+        client = make_client()
+        assert self._validator(client)._comment(ctx, "Some comment body") is True
+        client.post_comment.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "partial,title,body,files",
+        [
+            pytest.param(
+                BUILD_START_COMMENT_PARTIAL,
+                "Add com.example.foobar",
+                FULL_CHECKLIST_BODY,
+                ["com.example.foobar.json", "cargo-sources.json"],
+                id="build",
+            ),
+            pytest.param(
+                DOMAIN_COMMENT_PARTIAL,
+                "Add com.example.foobar",
+                FULL_CHECKLIST_BODY,
+                ["com.example.foobar.json", "cargo-sources.json"],
+                id="domain",
+            ),
+            pytest.param(
+                REVIEW_COMMENT_PARTIAL,
+                "Not a valid title",
+                FULL_CHECKLIST_BODY,
+                ["com.example.foobar.json"],
+                id="review",
+            ),
+        ],
+    )
+    def test_comment_e2ee(self, partial, title, body, files):
+        raw_pr = make_fake_raw_pr(title=title, body=body, files=files)
+        client = make_client(fetch_pr=raw_pr)
+        self._validator(client).validate_pr(7378)
+        comment_bodies = [c[0][1] for c in client.post_comment.call_args_list]
+        assert any(partial in b and b.endswith(COMMENT_FOOTER) for b in comment_bodies)
+
+    def test_deduper_matches_only_original_body(self):
+        ctx = make_pr_context(comment_lines=[])
+        client = make_client()
+        validator = self._validator(client)
+        validator._comment(ctx, "Some comment body")
+        client.post_comment.reset_mock()
+        assert validator._comment(ctx, "Some comment body") is True
+        client.post_comment.assert_not_called()
 
 
 class TestRun:
